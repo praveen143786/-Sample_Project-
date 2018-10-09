@@ -1,0 +1,43 @@
+---
+ - hosts: app
+   sudo: yes
+   tasks:
+     - name: install java
+       yum: name=java state=installed
+     - name: download tomcat
+       get_url:
+         url: http://www-eu.apache.org/dist/tomcat/tomcat-9/v9.0.7/bin/apache-tomcat-9.0.7.tar.gz
+         dest: /opt
+     - name: untar tomcat
+       unarchive:
+         src: /opt/apache-tomcat-9.0.7.tar.gz
+         dest: /opt
+         remote_src: yes
+     - name: copy file
+       copy: src=/root/tomcat.service dest=/etc/systemd/ mode=0777
+     - name: enable tomcat
+       systemd:
+       name: tomcat
+       enabled: yes
+       state: started
+       become: true
+     - name: download maven
+       get_url:
+         url: http://www-us.apache.org/dist/maven/maven-3/3.5.3/binaries/apache-maven-3.5.3-bin.tar.gz
+         dest: /opt
+     - name: untar it
+       unarchive:
+         src: /opt/apache-maven-3.5.3-bin.tar.gz
+         dest: /opt
+         remote_src: yes
+     - name: create file
+       file: dest=/etc/profile.d/maven.sh mode=0777 state=touch
+     - name: add path
+       lineinfile:
+         dest: /etc/profile.d/maven.sh
+         line: '{{ item }}'
+       with_items:
+         - 'export M2_HOME=/opt/apache-maven-3.5.3'
+         - 'export PATH=${M2_HOME}/bin:${PATH}'
+     - name: update the file
+       shell: source /etc/profile.d/maven.sh
